@@ -28,113 +28,194 @@ jobs:
         rm -rf * .??*
         flutter create --org com.example --project-name meu_primeiro_app .
 
-    - name: Injetar o Código do Facebook
+    - name: Adicionar Bibliotecas de Som e Criptografia
+      run: |
+        flutter pub add encrypt
+        flutter pub add path_provider
+        # Injeta a dependência do Quiet Modem para transmissão de dados por áudio
+        echo "  quiet_modem: ^1.0.0" >> pubspec.yaml
+
+    - name: Injetar o Código do Chat por Som
       run: |
         cat << 'EOF' > lib/main.dart
         import 'package:flutter/material.dart';
+        import 'package:encrypt/encrypt.dart' as encrypt;
 
         void main() {
-          runApp(const FacebookCloneApp());
+          runApp(const SecretChatApp());
         }
 
-        class FacebookCloneApp extends StatelessWidget {
-          const FacebookCloneApp({super.key});
+        class SecretChatApp extends StatelessWidget {
+          const SecretChatApp({super.key});
 
           @override
           Widget build(BuildContext context) {
             return const MaterialApp(
               debugShowCheckedModeBanner: false,
-              home: FacebookHomePage(),
+              home: ChatPorSomPage(),
             );
           }
         }
 
-        class FacebookHomePage extends StatelessWidget {
-          const FacebookHomePage({super.key});
+        class ChatPorSomPage extends StatefulWidget {
+          const ChatPorSomPage({super.key});
+
+          @override
+          State<ChatPorSomPage> createState() => _ChatPorSomPageState();
+        }
+
+        class _ChatPorSomPageState extends State<ChatPorSomPage> {
+          final TextEditingController _msgController = TextEditingController();
+          final TextEditingController _keyController = TextEditingController(text: "ChaveSecreta12345");
+          
+          String statusDoSistema = "Aguardando transmissão...";
+          String textoCriptografado = "";
+          String somGeradoInfo = "";
+
+          // FUNÇÃO 1: Criptografar a mensagem e simular a conversão em Som/Ruído
+          void transmitirMensagem() {
+            if (_msgController.text.isEmpty) return;
+
+            // Criamos uma chave de 32 bytes baseada no que você digitou
+            final String chaveUsuario = _keyController.text.padRight(32).substring(0, 32);
+            final key = encrypt.Key.fromUtf8(chaveUsuario);
+            final iv = encrypt.IV.fromLength(16);
+            final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+            // Criptografa o texto "meu chefe é corno."
+            final encrypted = encrypter.encrypt(_msgController.text, iv: iv);
+
+            setState(() {
+              textoCriptografado = encrypted.base64;
+              statusDoSistema = "Transmitindo via ULTRASSOM (19kHz)...";
+              // O ruído gerado mistura o texto criptografado em frequências agudas
+              somGeradoInfo = "Ruído emitido: [Modulação FSK de alta frequência]";
+            });
+
+            // Aqui o app acionaria o alto-falante física do celular enviando os bipes
+            _msgController.clear();
+          }
+
+          // FUNÇÃO 2: Simula o microfone captando o ruído e descriptografando com a chave
+          void receberETraduir() {
+            if (textoCriptografado.isEmpty) return;
+
+            try {
+              final String chaveUsuario = _keyController.text.padRight(32).substring(0, 32);
+              final key = encrypt.Key.fromUtf8(chaveUsuario);
+              final iv = encrypt.IV.fromLength(16);
+              final encrypter = encrypt.Encrypter(encrypt.AES(key));
+
+              // Descriptografa o ruído captado
+              final decrypted = encrypter.decrypt64(textoCriptografado, iv: iv);
+
+              setState(() {
+                statusDoSistema = "Mensagem recebida com SUCESSO!";
+                _msgController.text = decrypted; // Joga o texto limpo na tela
+              });
+            } catch (e) {
+              setState(() {
+                statusDoSistema = "ERRO: Chave incorreta! O som virou apenas ruído inválido.";
+              });
+            }
+          }
 
           @override
           Widget build(BuildContext context) {
             return Scaffold(
-              backgroundColor: Colors.grey[300],
+              backgroundColor: const Color(0xFF121212), // Tema escuro estilo hacker
               appBar: AppBar(
-                backgroundColor: const Color(0xFF1877F2),
-                title: const Text(
-                  'facebook',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -1.2,
-                  ),
-                ),
-                actions: [
-                  IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () {}),
-                  IconButton(icon: const Icon(Icons.messenger, color: Colors.white), onPressed: () {}),
-                ],
+                backgroundColor: Colors.black,
+                title: const Text('SomChat - Transmissão Offline', style: TextStyle(color: Colors.greenAccent)),
               ),
-              body: ListView(
-                children: [
-                  Container(
-                    color: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                    child: Column(
+              body: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Configuração da Chave Secreta do Chat
+                    Card(
+                      color: Colors.grey[900],
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: TextField(
+                          controller: _keyController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            labelText: 'Chave Secreta deste Chat (Senha)',
+                            labelStyle: TextStyle(color: Colors.greenAccent),
+                            border: InputBorder.none,
+                            icon: Icon(Icons.vpn_key, color: Colors.greenAccent),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Tela de Status do Sistema
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(color: Colors.black, border: Border.all(color: Colors.greenAccent)),
+                      child: Column(
+                        children: [
+                          Text(statusDoSistema, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                          if (textoCriptografado.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text("Código no Som: $textoCriptografado", style: const TextStyle(color: Colors.amber, fontSize: 12)),
+                            Text(somGeradoInfo, style: const TextStyle(color: Colors.grey, fontSize: 11, fontStyle: FontStyle.italic)),
+                          ]
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+
+                    // Campo para escrever a mensagem secreta
+                    TextField(
+                      controller: _msgController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: 'Escreva sua mensagem offline...',
+                        hintStyle: TextStyle(color: Colors.grey),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.greenAccent)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Botões de Ação
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.person, color: Colors.white)),
-                            const SizedBox(width: 8.0),
-                            const Expanded(child: TextField(decoration: InputDecoration(hintText: 'No que você está pensando?', border: InputBorder.none))),
-                          ],
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: transmitirMensagem,
+                            icon: const Icon(Icons.volume_up),
+                            label: const Text('Emitir Som'),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.black),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: receberETraduir,
+                            icon: const Icon(Icons.mic),
+                            label: const Text('Ouvir e Traduzir'),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
+                          ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  const PostCard(userName: 'Error404notafound', time: '5 min atrás', postText: 'Agora vai, chefe! Layout do Facebook gerado direto pelo celular! 🚀🔥'),
-                ],
-              ),
-            );
-          }
-        }
-
-        class PostCard extends StatelessWidget {
-          final String userName;
-          final String time;
-          final String postText;
-          const PostCard({super.key, required this.userName, required this.time, required this.postText});
-
-          @override
-          Widget build(BuildContext context) {
-            return Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(backgroundColor: Colors.grey, child: Icon(Icons.person, color: Colors.white)),
-                      const SizedBox(width: 8.0),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12.0)),
-                      ]),
-                    ],
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(postText),
-                ],
+                    )
+                  ],
+                ),
               ),
             );
           }
         }
         EOF
 
-    - name: Construir APK Versao Facebook
+    - name: Construir APK Versao Som Secreto
       run: flutter build apk --release
 
     - name: Enviar APK para Download
       uses: actions/upload-artifact@v4
       with:
-        name: app-facebook-real
+        name: app-som-secreto
         path: build/app/outputs/flutter-apk/app-release.apk
