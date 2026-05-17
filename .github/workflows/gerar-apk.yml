@@ -93,7 +93,7 @@ jobs:
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text('🫐 Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
+                title: const Text(' Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.black,
                 bottom: TabBar(
                   controller: _tabController,
@@ -127,8 +127,6 @@ jobs:
             return Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                mainAxisAlignment: Main====
-=======
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.bluetooth_searching, size: 64, color: Colors.blue),
