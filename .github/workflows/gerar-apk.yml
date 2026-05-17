@@ -39,6 +39,7 @@ jobs:
         flutter pub add flutter_blue_plus
         flutter pub add camera
         flutter pub add torch_light
+        flutter pub add soundpool
 
     - name: Injetar Permissões Nativas no AndroidManifest (Microfone, Bluetooth, Câmera e Flash)
       run: |
@@ -54,6 +55,7 @@ jobs:
         import 'package:permission_handler/permission_handler.dart';
         import 'package:torch_light/torch_light.dart';
         import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+        import 'package:soundpool/soundpool.dart';
 
         void main() {
           runApp(const BlueberryApp());
@@ -84,18 +86,50 @@ jobs:
 
         class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
           late TabController _tabController;
+          Soundpool? _pool;
+          final Map<String, int> _soundIds = {};
 
           @override
           void initState() {
             super.initState();
             _tabController = TabController(length: 4, vsync: this);
+            _initSounds();
+          }
+
+          // Inicializa o gerenciador de áudio nativo e gera as frequências na memória
+          void _initSounds() async {
+            _pool = Soundpool.fromOptions(options: const SoundpoolOptions(streamType: StreamType.music));
+            
+            // Gera bipes de teste em memória para os símbolos de IA
+            final List<double> freqs = [600.0, 1200.0, 1400.0, 1600.0, 1800.0, 2000.0];
+            final List<String> syms = ['▰', '⏃', '⟒', '⟌', '⍁', '⎎'];
+            
+            for (int i = 0; i < freqs.length; i++) {
+              final double sampleRate = 44100.0;
+              final int numSamples = (0.2 * sampleRate).toInt(); // 200ms por som
+              final Int16List buffer = Int16List(numSamples);
+              
+              for (int n = 0; n < numSamples; n++) {
+                buffer[n] = (sin(2 * pi * freqs[i] * n / sampleRate) * 32767).toInt();
+              }
+              
+              final Uint8List byteBuffer = buffer.buffer.asUint8List();
+              int id = await _pool!.loadUint8List(byteBuffer);
+              _soundIds[syms[i]] = id;
+            }
+          }
+
+          @override
+          void dispose() {
+            _pool?.dispose();
+            super.dispose();
           }
 
           @override
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text('🫐 Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
+                title: const Text(' Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.black,
                 bottom: TabBar(
                   controller: _tabController,
@@ -211,30 +245,14 @@ jobs:
                 .replaceAll('o', '⍁').replaceAll('u', '⎎').replaceAll(' ', '▰');
             }
 
-            // Função matemática que gera e reproduz frequências de áudio nativas para cada símbolo
             void emitirSomSintetico(String runas) async {
-              final double sampleRate = 44100.0;
-              final double duration = 0.25; // Duração de cada bipe (250ms)
-              final int numSamples = (duration * sampleRate).toInt();
-              
+              if (_pool == null) return;
               for (int i = 0; i < runas.length; i++) {
-                double frequency = 1000.0; // Frequência base
-                
-                // Altera o tom do bipe dependendo do símbolo da IA
-                if (runas[i] == '⏃') frequency = 1200.0;
-                if (runas[i] == '⟒') frequency = 1400.0;
-                if (runas[i] == '⟌') frequency = 1600.0;
-                if (runas[i] == '⍁') frequency = 1800.0;
-                if (runas[i] == '⎎') frequency = 2000.0;
-                if (runas[i] == '▰') frequency = 600.0; // Som grave para espaço
-
-                final Int16List buffer = Int16List(numSamples);
-                for (int n = 0; n < numSamples; n++) {
-                  buffer[n] = (sin(2 * pi * frequency * n / sampleRate) * 32767).toInt();
+                String char = runas[i];
+                if (_soundIds.containsKey(char)) {
+                  await _pool!.play(_soundIds[char]!);
                 }
-                
-                // Simulação visual de envio de pacotes de dados acústicos
-                await Future.delayed(Duration(milliseconds: (duration * 1000).toInt() + 50));
+                await Future.delayed(const Duration(milliseconds: 250)); // Intervalo entre os bipes
               }
             }
 
