@@ -32,8 +32,6 @@ jobs:
       run: |
         flutter pub add encrypt
         flutter pub add path_provider
-        # Injeta a dependência do Quiet Modem para transmissão de dados por áudio
-        echo "  quiet_modem: ^1.0.0" >> pubspec.yaml
 
     - name: Injetar o Código do Chat por Som
       run: |
@@ -72,31 +70,25 @@ jobs:
           String textoCriptografado = "";
           String somGeradoInfo = "";
 
-          // FUNÇÃO 1: Criptografar a mensagem e simular a conversão em Som/Ruído
           void transmitirMensagem() {
             if (_msgController.text.isEmpty) return;
 
-            // Criamos uma chave de 32 bytes baseada no que você digitou
             final String chaveUsuario = _keyController.text.padRight(32).substring(0, 32);
             final key = encrypt.Key.fromUtf8(chaveUsuario);
             final iv = encrypt.IV.fromLength(16);
             final encrypter = encrypt.Encrypter(encrypt.AES(key));
 
-            // Criptografa o texto "meu chefe é corno."
             final encrypted = encrypter.encrypt(_msgController.text, iv: iv);
 
             setState(() {
               textoCriptografado = encrypted.base64;
               statusDoSistema = "Transmitindo via ULTRASSOM (19kHz)...";
-              // O ruído gerado mistura o texto criptografado em frequências agudas
               somGeradoInfo = "Ruído emitido: [Modulação FSK de alta frequência]";
             });
 
-            // Aqui o app acionaria o alto-falante física do celular enviando os bipes
             _msgController.clear();
           }
 
-          // FUNÇÃO 2: Simula o microfone captando o ruído e descriptografando com a chave
           void receberETraduir() {
             if (textoCriptografado.isEmpty) return;
 
@@ -106,12 +98,11 @@ jobs:
               final iv = encrypt.IV.fromLength(16);
               final encrypter = encrypt.Encrypter(encrypt.AES(key));
 
-              // Descriptografa o ruído captado
               final decrypted = encrypter.decrypt64(textoCriptografado, iv: iv);
 
               setState(() {
                 statusDoSistema = "Mensagem recebida com SUCESSO!";
-                _msgController.text = decrypted; // Joga o texto limpo na tela
+                _msgController.text = decrypted;
               });
             } catch (e) {
               setState(() {
@@ -123,7 +114,7 @@ jobs:
           @override
           Widget build(BuildContext context) {
             return Scaffold(
-              backgroundColor: const Color(0xFF121212), // Tema escuro estilo hacker
+              backgroundColor: const Color(0xFF121212),
               appBar: AppBar(
                 backgroundColor: Colors.black,
                 title: const Text('SomChat - Transmissão Offline', style: TextStyle(color: Colors.greenAccent)),
@@ -133,7 +124,6 @@ jobs:
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Configuração da Chave Secreta do Chat
                     Card(
                       color: Colors.grey[900],
                       child: Padding(
@@ -152,7 +142,6 @@ jobs:
                     ),
                     const SizedBox(height: 20),
                     
-                    // Tela de Status do Sistema
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(color: Colors.black, border: Border.all(color: Colors.greenAccent)),
@@ -169,7 +158,6 @@ jobs:
                     ),
                     const Spacer(),
 
-                    // Campo para escrever a mensagem secreta
                     TextField(
                       controller: _msgController,
                       style: const TextStyle(color: Colors.white),
@@ -181,7 +169,6 @@ jobs:
                     ),
                     const SizedBox(height: 20),
 
-                    // Botões de Ação
                     Row(
                       children: [
                         Expanded(
@@ -217,5 +204,5 @@ jobs:
     - name: Enviar APK para Download
       uses: actions/upload-artifact@v4
       with:
-        name: app-som-secreto
+        name: app-som-secreto-corrigido
         path: build/app/outputs/flutter-apk/app-release.apk
