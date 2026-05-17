@@ -3,7 +3,7 @@ name: Compilar e Gerar APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Permite iniciar manualmente se precisar
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,6 +22,24 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
+
+    - name: Criar projeto moderno e limpo
+      run: |
+        # Salva o seu código principal antes de limpar a pasta
+        mv lib/main.dart ./main.dart.bak || true
+        
+        # Limpa os arquivos antigos para evitar conflitos
+        rm -rf * .??*
+        
+        # Cria um projeto Flutter totalmente novo e moderno (V2)
+        flutter create --org com.example --project-name meu_primeiro_app .
+        
+        # Devolve o seu código principal para o projeto novo
+        mkdir -p lib
+        mv ../main.dart.bak lib/main.dart || true
+        
+        # Adiciona o pacote do Firebase atualizado
+        flutter pub add firebase_core
 
     - name: Instalar Dependencias
       run: flutter pub get
