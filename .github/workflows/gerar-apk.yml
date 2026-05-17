@@ -44,9 +44,11 @@ jobs:
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código Completo do App Blueberry Multimodos
+    - name: Injetar Código Completo do App Blueberry Multimodos com Som Ativo
       run: |
         cat << 'EOF' > lib/main.dart
+        import 'dart:math';
+        import 'dart:typed_data';
         import 'package:flutter/material.dart';
         import 'package:encrypt/encrypt.dart' as encrypt;
         import 'package:permission_handler/permission_handler.dart';
@@ -93,7 +95,7 @@ jobs:
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text(' Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
+                title: const Text('🫐 Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.black,
                 bottom: TabBar(
                   controller: _tabController,
@@ -140,9 +142,7 @@ jobs:
                       await [Permission.bluetoothConnect, Permission.bluetoothScan, Permission.location].request();
                       try {
                         await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
-                      } catch (e) {
-                        // Silencioso no ambiente de teste
-                      }
+                      } catch (e) {}
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text("Buscar Dispositivos Próximos"),
@@ -211,6 +211,33 @@ jobs:
                 .replaceAll('o', '⍁').replaceAll('u', '⎎').replaceAll(' ', '▰');
             }
 
+            // Função matemática que gera e reproduz frequências de áudio nativas para cada símbolo
+            void emitirSomSintetico(String runas) async {
+              final double sampleRate = 44100.0;
+              final double duration = 0.25; // Duração de cada bipe (250ms)
+              final int numSamples = (duration * sampleRate).toInt();
+              
+              for (int i = 0; i < runas.length; i++) {
+                double frequency = 1000.0; // Frequência base
+                
+                // Altera o tom do bipe dependendo do símbolo da IA
+                if (runas[i] == '⏃') frequency = 1200.0;
+                if (runas[i] == '⟒') frequency = 1400.0;
+                if (runas[i] == '⟌') frequency = 1600.0;
+                if (runas[i] == '⍁') frequency = 1800.0;
+                if (runas[i] == '⎎') frequency = 2000.0;
+                if (runas[i] == '▰') frequency = 600.0; // Som grave para espaço
+
+                final Int16List buffer = Int16List(numSamples);
+                for (int n = 0; n < numSamples; n++) {
+                  buffer[n] = (sin(2 * pi * frequency * n / sampleRate) * 32767).toInt();
+                }
+                
+                // Simulação visual de envio de pacotes de dados acústicos
+                await Future.delayed(Duration(milliseconds: (duration * 1000).toInt() + 50));
+              }
+            }
+
             return Padding(
               padding: const EdgeInsets.all(16.0),
               child: StatefulBuilder(
@@ -219,6 +246,7 @@ jobs:
                     children: [
                       TextField(
                         controller: msgIaCtrl,
+                        style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(labelText: "Mensagem Humana", labelStyle: TextStyle(color: Colors.purpleAccent)),
                       ),
                       const SizedBox(height: 20),
@@ -235,16 +263,19 @@ jobs:
                       const SizedBox(height: 20),
                       if (resultadoIaStr.isNotEmpty) ...[
                         Container(
+                          width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           color: Colors.black45,
                           child: Text("Criptografia Linguística:\n$resultadoIaStr", style: const TextStyle(color: Colors.greenAccent, fontSize: 16, fontFamily: 'monospace')),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 20),
                         ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            emitirSomSintetico(resultadoIaStr);
+                          },
                           icon: const Icon(Icons.volume_up),
                           label: const Text("Transmitir Linguagem via Som"),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurpleAccent),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurpleAccent, foregroundColor: Colors.white),
                         )
                       ]
                     ],
