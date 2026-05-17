@@ -1,0 +1,9 @@
+name: meu_primeiro_app
+description: Meu aplicativo criado pelo celular.
+version: 1.0.0+1
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.0.0
