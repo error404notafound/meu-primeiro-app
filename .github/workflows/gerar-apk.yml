@@ -41,11 +41,18 @@ jobs:
         flutter pub add torch_light
         flutter pub add --dev flutter_launcher_icons
 
-    - name: Baixar Imagem do Ícone via Link e Configurar
+    - name: Baixar Imagem do Ícone e Converter para PNG
       run: |
         mkdir -p assets
-        curl -L -o assets/icon.png "COLE_O_LINK_DA_SUA_IMAGEM_PNG_AQUI"
-        
+        # Instala ferramenta de conversão de imagem
+        sudo apt-get update && sudo apt-get install -y webp
+        # Baixa a imagem webp do link fornecido
+        curl -L -o assets/temp_icon.webp "https://image.cdn2.seaart.me/2026-05-17/d853n5te878c73c6qmm0/b7b403bfa1ca8ac9a45a4fcc89ac2448_high.webp"
+        # Converte o arquivo para o formato PNG exigido pelo Flutter
+        dwebp assets/temp_icon.webp -o assets/icon.png
+        rm assets/temp_icon.webp
+
+        # Cria o arquivo de configuração do gerador de ícones
         cat << 'EOF' > flutter_launcher_icons.yaml
         flutter_launcher_icons:
           android: "launcher_icon"
@@ -54,11 +61,11 @@ jobs:
           min_sdk_android: 21
         EOF
         
+        # Executa o comando para aplicar o ícone no Android nativo
         flutter pub run flutter_launcher_icons
 
     - name: Injetar Permissões Nativas no AndroidManifest (Microfone, Bluetooth, Câmera e Flash)
       run: |
-        # Injeta as permissões necessárias para Bluetooth, Câmera, Microfone e Lanterna no Android
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
     - name: Injetar Código Completo do App Blueberry Multimodos
@@ -135,12 +142,10 @@ jobs:
             );
           }
 
-          // --- 1. MODO ULTRASSOM (O original criptografado) ---
           Widget _buildUltrassomTab() {
             return const Center(child: Text("Modo Ultrassom Ativo\n(Mesmo sistema de criptografia anterior)", textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)));
           }
 
-          // --- 2. MODO BLUETOOTH (Com criptografia exclusiva por pareamento) ---
           Widget _buildBluetoothTab() {
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -166,7 +171,6 @@ jobs:
             );
           }
 
-          // --- 3. MODO FLASH BINÁRIO (Para o meio do mato) ---
           Widget _buildFlashTab() {
             final TextEditingController msgFlashCtrl = TextEditingController();
             return Padding(
@@ -183,7 +187,6 @@ jobs:
                       String texto = msgFlashCtrl.text;
                       if (texto.isEmpty) return;
                       
-                      // Converte string para binário (0 e 1)
                       String binario = texto.codeUnits.map((x) => x.toRadixString(2).padLeft(8, '0')).join();
                       
                       for (int i = 0; i < binario.length; i++) {
@@ -192,13 +195,13 @@ jobs:
                         } else {
                           await TorchLight.disableTorch();
                         }
-                        await Future.delayed(const Duration(milliseconds: 300)); // Tempo do pulso binário
+                        await Future.delayed(const Duration(milliseconds: 300));
                       }
                       await TorchLight.disableTorch();
                     },
                     icon: const Icon(Icons.flashlight_on),
                     label: const Text("Transmitir via Flash Óptico"),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow[700], foregroundColor: Colors.black),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow, foregroundColor: Colors.black),
                   ),
                   const SizedBox(height: 30),
                   const Divider(color: Colors.grey),
@@ -216,12 +219,10 @@ jobs:
             );
           }
 
-          // --- 4. MODO IDIOMA IA ESTRANHO (Criptografia Linguística por Som) ---
           Widget _buildIQLangTab() {
             final TextEditingController msgIaCtrl = TextEditingController();
             String resultadoIaStr = "";
             
-            // Dicionário de tradução sintética de IA (Exemplo de codificação léxica simulada)
             String codificarParaLinguaIA(String input) {
               return input.toLowerCase()
                 .replaceAll('a', '⏃').replaceAll('e', '⟒').replaceAll('i', '⟌')
@@ -258,9 +259,7 @@ jobs:
                         ),
                         const SizedBox(height: 10),
                         ElevatedButton.icon(
-                          onPressed: () {
-                            // Simula envio da língua estranha através do canal de som
-                          },
+                          onPressed: () {},
                           icon: const Icon(Icons.volume_up),
                           label: const Text("Transmitir Linguagem via Som"),
                           style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurpleAccent),
