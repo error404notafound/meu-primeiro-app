@@ -25,24 +25,17 @@ jobs:
 
     - name: Criar projeto moderno e limpo
       run: |
-        # Salva o seu código principal antes de limpar a pasta
         mv lib/main.dart ./main.dart.bak || true
-        
-        # Limpa os arquivos antigos para evitar conflitos
         rm -rf * .??*
-        
-        # Cria um projeto Flutter totalmente novo e moderno (V2)
         flutter create --org com.example --project-name meu_primeiro_app .
-        
-        # Devolve o seu código principal para o projeto novo
         mkdir -p lib
         mv ../main.dart.bak lib/main.dart || true
-        
-        # Adiciona o pacote do Firebase atualizado
         flutter pub add firebase_core
 
-    - name: Instalar Dependencias
-      run: flutter pub get
+    - name: Limpeza Profunda do Cache
+      run: |
+        flutter clean
+        flutter pub get
 
     - name: Construir APK de Release
       run: flutter build apk --release
@@ -50,5 +43,5 @@ jobs:
     - name: Enviar APK para Download
       uses: actions/upload-artifact@v4
       with:
-        name: app-final-pronto
+        name: app-facebook-layout
         path: build/app/outputs/flutter-apk/app-release.apk
