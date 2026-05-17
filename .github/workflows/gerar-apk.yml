@@ -41,13 +41,11 @@ jobs:
         flutter pub add torch_light
         flutter pub add --dev flutter_launcher_icons
 
-    - name: Baixar Imagem do Ícone e Converter para PNG
+    - name: Baixar Imagem do Ícone Seguro
       run: |
         mkdir -p assets
-        sudo apt-get update && sudo apt-get install -y webp
-        curl -L -o assets/temp_icon.webp "https://seaart.me"
-        dwebp assets/temp_icon.webp -o assets/icon.png
-        rm assets/temp_icon.webp
+        # Baixa o ícone do Blueberry convertido diretamente em um servidor limpo e sem bloqueios
+        curl -L -H "User-Agent: Mozilla/5.0" -o assets/icon.png "https://githubusercontent.com"
 
         cat << 'EOF' > flutter_launcher_icons.yaml
         flutter_launcher_icons:
@@ -160,7 +158,7 @@ jobs:
                       try {
                         await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
                       } catch (e) {
-                        // Trata erros silenciosamente na interface de testes
+                        // Silencioso no ambiente de teste
                       }
                     },
                     icon: const Icon(Icons.refresh),
@@ -169,7 +167,7 @@ jobs:
                   )
                 ],
               ),
-                );
+            );
           }
 
           Widget _buildFlashTab() {
