@@ -23,25 +23,118 @@ jobs:
       with:
         channel: 'stable'
 
-    - name: Criar projeto moderno e limpo
+    - name: Criar Projeto Base do Flutter
       run: |
-        mv lib/main.dart ./main.dart.bak || true
         rm -rf * .??*
         flutter create --org com.example --project-name meu_primeiro_app .
-        mkdir -p lib
-        mv ../main.dart.bak lib/main.dart || true
-        flutter pub add firebase_core
 
-    - name: Limpeza Profunda do Cache
+    - name: Injetar o Código do Facebook
       run: |
-        flutter clean
-        flutter pub get
+        cat << 'EOF' > lib/main.dart
+        import 'package:flutter/material.dart';
 
-    - name: Construir APK de Release
+        void main() {
+          runApp(const FacebookCloneApp());
+        }
+
+        class FacebookCloneApp extends StatelessWidget {
+          const FacebookCloneApp({super.key});
+
+          @override
+          Widget build(BuildContext context) {
+            return const MaterialApp(
+              debugShowCheckedModeBanner: false,
+              home: FacebookHomePage(),
+            );
+          }
+        }
+
+        class FacebookHomePage extends StatelessWidget {
+          const FacebookHomePage({super.key});
+
+          @override
+          Widget build(BuildContext context) {
+            return Scaffold(
+              backgroundColor: Colors.grey[300],
+              appBar: AppBar(
+                backgroundColor: const Color(0xFF1877F2),
+                title: const Text(
+                  'facebook',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -1.2,
+                  ),
+                ),
+                actions: [
+                  IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () {}),
+                  IconButton(icon: const Icon(Icons.messenger, color: Colors.white), onPressed: () {}),
+                ],
+              ),
+              body: ListView(
+                children: [
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.person, color: Colors.white)),
+                            const SizedBox(width: 8.0),
+                            const Expanded(child: TextField(decoration: InputDecoration(hintText: 'No que você está pensando?', border: InputBorder.none))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  const PostCard(userName: 'Error404notafound', time: '5 min atrás', postText: 'Agora vai, chefe! Layout do Facebook gerado direto pelo celular! 🚀🔥'),
+                ],
+              ),
+            );
+          }
+        }
+
+        class PostCard extends StatelessWidget {
+          final String userName;
+          final String time;
+          final String postText;
+          const PostCard({super.key, required this.userName, required this.time, required this.postText});
+
+          @override
+          Widget build(BuildContext context) {
+            return Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const CircleAvatar(backgroundColor: Colors.grey, child: Icon(Icons.person, color: Colors.white)),
+                      const SizedBox(width: 8.0),
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12.0)),
+                      ]),
+                    ],
+                  ),
+                  const SizedBox(height: 8.0),
+                  Text(postText),
+                ],
+              ),
+            );
+          }
+        }
+        EOF
+
+    - name: Construir APK Versao Facebook
       run: flutter build apk --release
 
     - name: Enviar APK para Download
       uses: actions/upload-artifact@v4
       with:
-        name: app-facebook-layout
+        name: app-facebook-real
         path: build/app/outputs/flutter-apk/app-release.apk
