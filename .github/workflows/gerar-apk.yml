@@ -47,13 +47,12 @@ jobs:
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código do App Blueberry com Efeito Gibberlink Oficial
+    - name: Injetar Código do App Blueberry com Efeito Gibberlink Oficial Corrigido
       run: |
         cat << 'EOF' > lib/main.dart
         import 'dart:async';
-        import 'dart:math';
-        import 'dart:typed_data';
         import 'package:flutter/material.dart';
+        import 'package:flutter/services.dart';
         import 'package:encrypt/encrypt.dart' as encrypt;
         import 'package:permission_handler/permission_handler.dart';
         import 'package:torch_light/torch_light.dart';
@@ -83,7 +82,7 @@ jobs:
           const HomeScreen({super.key});
 
           @override
-          State<HomeScreen> HomeScreenState() => _HomeScreenState();
+          State<HomeScreen> createState() => _HomeScreenState();
         }
 
         class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
@@ -99,7 +98,7 @@ jobs:
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text('🫐 Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
+                title: const Text(' Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.black,
                 bottom: TabBar(
                   controller: _tabController,
@@ -210,11 +209,9 @@ jobs:
             String linkStatusInfo = "Canal de Dados Acústicos Pronto.";
             String pacoteBits = "";
 
-            // O algoritmo do Gibberlink converte os caracteres humanos em pacotes modulação de frequência (Data-over-Sound)
             void executarGibberlink(String input) async {
               if (input.isEmpty) return;
               
-              // Gera o fluxo binário de dados brutos que as máquinas trocam entre si
               String binario = input.codeUnits.map((x) => x.toRadixString(2).padLeft(8, '0')).join();
               
               setState(() {
@@ -222,17 +219,12 @@ jobs:
                 linkStatusInfo = "GIBBERLINK MODE: Sincronizando com Agente...";
               });
 
-              // Loop de modulação acústica: Cria rajadas rápidas de bipes em frequências táticas audíveis
               for (int i = 0; i < binario.length; i++) {
-                // Altera dinamicamente as frequências do hardware de áudio baseado em 0 e 1, imitando o chiado do modem original das IAs
                 if (binario[i] == '1') {
-                  // Bit Alto (Rajada de Tom Agudo)
-                  await BuildContextX.playClickSound(1800); 
+                  await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate', 'HapticFeedbackType.heavyImpact');
                 } else {
-                  // Bit Baixo (Rajada de Tom Grave)
-                  await BuildContextX.playClickSound(900);
+                  await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate', 'HapticFeedbackType.lightImpact');
                 }
-                // Velocidade tática acelerada de transmissão das IAs (50 milissegundos por bit)
                 await Future.delayed(const Duration(milliseconds: 50));
               }
 
@@ -293,14 +285,6 @@ jobs:
                 }
               ),
             );
-          }
-        }
-
-        // Extensão nativa para gerar bipes eletrônicos de frequência FSK sem depender de plugins com bugs de Gradle
-        extension BuildContextX on HomeScreenState {
-          static Future<void> playClickSound(int frequency) async {
-            // Utiliza o canal de cliques nativos do kernel Android em alta velocidade combinados com realimentação hática de pulso
-            await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate');
           }
         }
         EOF
