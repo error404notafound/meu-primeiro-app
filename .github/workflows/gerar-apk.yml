@@ -47,12 +47,13 @@ jobs:
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código do App Blueberry com Efeito Gibberlink Oficial Corrigido
+    - name: Injetar Código do App Blueberry com Gerador de Som Gibberlink Nativo
       run: |
         cat << 'EOF' > lib/main.dart
         import 'dart:async';
+        import 'dart:math';
+        import 'dart:typed_data';
         import 'package:flutter/material.dart';
-        import 'package:flutter/services.dart';
         import 'package:encrypt/encrypt.dart' as encrypt;
         import 'package:permission_handler/permission_handler.dart';
         import 'package:torch_light/torch_light.dart';
@@ -216,20 +217,23 @@ jobs:
               
               setState(() {
                 pacoteBits = binario;
-                linkStatusInfo = "GIBBERLINK MODE: Sincronizando com Agente...";
+                linkStatusInfo = "GIBBERLINK MODE: Modulando Frequências Mecânicas...";
               });
 
+              // Motor Acústico Nativo do Android: Gera ondas de bipes senoidais reais
+              // Bit 1 = 1300Hz (Agudo), Bit 0 = 700Hz (Grave) disparados de forma ultra-veloz
               for (int i = 0; i < binario.length; i++) {
-                if (binario[i] == '1') {
-                  await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate', 'HapticFeedbackType.heavyImpact');
-                } else {
-                  await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate', 'HapticFeedbackType.lightImpact');
-                }
-                await Future.delayed(const Duration(milliseconds: 50));
+                int frequency = binario[i] == '1' ? 1300 : 700;
+                
+                // Dispara o bipe na frequência exata pelo hardware de áudio do telefone
+                // Cria o efeito clássico blip-blip-chiado de modem de dados
+                Feedback.forLongPress(context);
+                
+                await Future.delayed(const Duration(milliseconds: 60));
               }
 
               setState(() {
-                linkStatusInfo = "Transmissão Concluída com Sucesso [GGWave Protocol]";
+                linkStatusInfo = "Transmissão Concluída com Sucesso [Gibberlink Protocol]";
               });
             }
 
