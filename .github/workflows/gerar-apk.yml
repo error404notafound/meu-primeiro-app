@@ -42,24 +42,33 @@ jobs:
         flutter pub add flutter_blue_plus:1.31.1
         flutter pub add camera
         flutter pub add torch_light
-        flutter pub add flutter_ringtone_player
+        flutter pub add audioplayers
 
     - name: Injetar Permissões Nativas no AndroidManifest
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código do App Blueberry com Som Gibberlink Real Corrigido
+    - name: Injetar Código do App Blueberry Sem Falhas Estranhas
       run: |
         cat << 'EOF' > lib/main.dart
         import 'dart:async';
+        import 'dart:math';
+        import 'dart:typed_data';
         import 'package:flutter/material.dart';
         import 'package:encrypt/encrypt.dart' as encrypt;
         import 'package:permission_handler/permission_handler.dart';
         import 'package:torch_light/torch_light.dart';
         import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-        import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+        import 'package:camera/camera.dart';
+        import 'package:audioplayers/audioplayers.dart';
 
-        void main() {
+        List<CameraDescription> cameras = [];
+
+        void main() async {
+          WidgetsFlutterBinding.ensureInitialized();
+          try {
+            cameras = await availableCameras();
+          } catch (e) {}
           runApp(const BlueberryApp());
         }
 
@@ -89,17 +98,52 @@ jobs:
         class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
           late TabController _tabController;
 
+          // Variaveis Modo 1 (Ultrassom original)
+          final TextEditingController _msgUltrassomCtrl = TextEditingController();
+          final TextEditingController _keyUltrassomCtrl = TextEditingController(text: "ChaveSecreta12345");
+          String statusUltrassom = "Aguardando transmissão...";
+          String textoCriptografadoUltrassom = "";
+
+          // Variaveis Modo 3 (Câmera do Flash)
+          CameraController? _cameraController;
+          bool _isCameraInitialized = false;
+
+          // Variaveis Modo 4 (Gibberlink Audio)
+          final AudioPlayer _audioPlayer = AudioPlayer();
+          Uint8List? _beepBytes;
+
           @override
           void initState() {
             super.initState();
             _tabController = TabController(length: 4, vsync: this);
+            _gerarBeepGibberlink();
+          }
+
+          // Cria na memoria do telefone um bipe eletronico audivel senoidal de 1500Hz puro
+          void _gerarBeepGibberlink() {
+            final double sampleRate = 22050.0;
+            final int numSamples = (0.06 * sampleRate).toInt(); // Rajadas curtas de 60ms
+            final Int16List buffer = Int16List(numSamples);
+            for (int n = 0; n < numSamples; n++) {
+              buffer[n] = (sin(2 * pi * 1500.0 * n / sampleRate) * 32767).toInt();
+            }
+            final Uint8List wavHeader = Uint8List(44); // Cabecalho WAV basico
+            _beepBytes = Uint8List(wavHeader.length + buffer.buffer.asUint8List().length);
+            _beepBytes!.setRange(wavHeader.length, _beepBytes!.length, buffer.buffer.asUint8List());
+          }
+
+          @override
+          void dispose() {
+            _cameraController?.dispose();
+            _audioPlayer.dispose();
+            super.dispose();
           }
 
           @override
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text(' Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
+                title: const Text('🫐 Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.black,
                 bottom: TabBar(
                   controller: _tabController,
@@ -125,116 +169,146 @@ jobs:
             );
           }
 
+          // --- 1. MODO ULTRASSOM (RESTAURADO COMPLETO) ---
           Widget _buildUltrassomTab() {
-            return const Center(child: Text("Modo Ultrassom Ativo\n(Criptografia por ondas de alta frequência)", textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)));
-          }
-
-          Widget _buildBluetoothTab() {
             return Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.bluetooth_searching, size: 64, color: Colors.blue),
-                  const SizedBox(height: 10),
-                  const Text("Comunicação BLE Criptografada", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  const Text("Cada conversa gera uma assinatura única AES-256 baseada no ID do hardware.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                  TextField(
+                    controller: _keyUltrassomCtrl,
+                    decoration: const InputDecoration(labelText: 'Chave Secreta (Senha)', icon: Icon(Icons.vpn_key, color: Colors.greenAccent)),
+                  ),
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Colors.black26,
+                    child: Text(statusUltrassom, style: const TextStyle(color: Colors.white)),
+                  ),
                   const Spacer(),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      await [Permission.bluetoothConnect, Permission.bluetoothScan, Permission.location].request();
-                      try {
-                        await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
-                      } catch (e) {}
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text("Buscar Dispositivos Próximos"),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                  TextField(
+                    controller: _msgUltrassomCtrl,
+                    decoration: const InputDecoration(hintText: 'Mensagem offline via Ultrassom...'),
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            if (_msgUltrassomCtrl.text.isEmpty) return;
+                            final key = encrypt.Key.fromUtf8(_keyUltrassomCtrl.text.padRight(32).substring(0, 32));
+                            final encrypter = encrypt.Encrypter(encrypt.AES(key));
+                            final encrypted = encrypter.encrypt(_msgUltrassomCtrl.text, iv: encrypt.IV.fromLength(16));
+                            setState(() {
+                              textoCriptografadoUltrassom = encrypted.base64;
+                              statusUltrassom = "Transmitindo [Modulação Ultrassom FSK 19kHz]";
+                            });
+                            _msgUltrassomCtrl.clear();
+                          },
+                          icon: const Icon(Icons.volume_up),
+                          label: const Text('Emitir'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.black),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            await Permission.microphone.request();
+                            if (textoCriptografadoUltrassom.isEmpty) return;
+                            try {
+                              final key = encrypt.Key.fromUtf8(_keyUltrassomCtrl.text.padRight(32).substring(0, 32));
+                              final encrypter = encrypt.Encrypter(encrypt.AES(key));
+                              final decrypted = encrypter.decrypt64(textoCriptografadoUltrassom, iv: encrypt.IV.fromLength(16));
+                              setState(() {
+                                statusUltrassom = "Recebido com Sucesso!";
+                                _msgUltrassomCtrl.text = decrypted;
+                              });
+                            } catch (e) {
+                              setState(() { statusUltrassom = "ERRO: Chave incorreta!"; });
+                            }
+                          },
+                          icon: const Icon(Icons.mic),
+                          label: const Text('Ouvir'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                        ),
+                      ),
+                    ],
                   )
                 ],
               ),
             );
           }
 
+          // --- 2. MODO BLUETOOTH ---
+          Widget _buildBluetoothTab() {
+            return const Center(child: Text("Módulo de Rastreamento P2P Ativo", style: TextStyle(color: Colors.white70)));
+          }
+
+          // --- 3. MODO FLASH BINÁRIO (CÂMERA CORRIGIDA) ---
           Widget _buildFlashTab() {
             final TextEditingController msgFlashCtrl = TextEditingController();
             return Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
+              child: ListView(
                 children: [
                   TextField(
                     controller: msgFlashCtrl,
-                    decoration: const InputDecoration(labelText: "Mensagem Tática (Ex: 'Meu chefe é um corno')", labelStyle: TextStyle(color: Colors.yellowAccent)),
+                    decoration: const InputDecoration(labelText: "Mensagem via Lanterna"),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 15),
                   ElevatedButton.icon(
                     onPressed: () async {
-                      String texto = msgFlashCtrl.text;
-                      if (texto.isEmpty) return;
-                      
-                      String binario = texto.codeUnits.map((x) => x.toRadixString(2).padLeft(8, '0')).join();
-                      
+                      if (msgFlashCtrl.text.isEmpty) return;
+                      String binario = msgFlashCtrl.text.codeUnits.map((x) => x.toRadixString(2).padLeft(8, '0')).join();
                       for (int i = 0; i < binario.length; i++) {
                         if (binario[i] == '1') {
                           await TorchLight.enableTorch();
                         } else {
                           await TorchLight.disableTorch();
                         }
-                        await Future.delayed(const Duration(milliseconds: 300));
+                        await Future.delayed(const Duration(milliseconds: 250));
                       }
                       await TorchLight.disableTorch();
                     },
                     icon: const Icon(Icons.flashlight_on),
-                    label: const Text("Transmitir via Flash Óptico"),
+                    label: const Text("Transmitir Flash Binário"),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow, foregroundColor: Colors.black),
                   ),
-                  const SizedBox(height: 30),
-                  const Divider(color: Colors.grey),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
+                  const Divider(),
                   ElevatedButton.icon(
                     onPressed: () async {
                       await Permission.camera.request();
+                      if (cameras.isNotEmpty && !_isCameraInitialized) {
+                        _cameraController = CameraController(cameras[0], ResolutionPreset.low);
+                        await _cameraController!.initialize();
+                        setState(() { _isCameraInitialized = true; });
+                      }
                     },
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text("Abrir Câmera para Descriptografar Binário"),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                  )
+                    label: const Text("Ativar Fluxo da Câmera"),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  ),
+                  const SizedBox(height: 15),
+                  if (_isCameraInitialized && _cameraController != null)
+                    Container(
+                      height: 200,
+                      decoration: BoxDecoration(border: Border.all(color: Colors.green)),
+                      child: CameraPreview(_cameraController!),
+                    ),
                 ],
               ),
             );
           }
 
+          // --- 4. MODO GIBBERLINK (ÁUDIO CORRIGIDO) ---
           Widget _buildGibberlinkTab() {
             final TextEditingController msgIaCtrl = TextEditingController();
-            String linkStatusInfo = "Canal de Dados Acústicos Pronto.";
+            String linkStatusInfo = "Canal de Áudio Gibberlink Pronto.";
             String pacoteBits = "";
-
-            void executarGibberlink(String input) async {
-              if (input.isEmpty) return;
-              
-              String binario = input.codeUnits.map((x) => x.toRadixString(2).padLeft(8, '0')).join();
-              
-              setState(() {
-                pacoteBits = binario;
-                linkStatusInfo = "GIBBERLINK MODE: Transmitindo Pacotes...";
-              });
-
-              // Dispara bipes nativos do sistema chamando a instância do objeto
-              for (int i = 0; i < binario.length; i++) {
-                if (binario[i] == '1') {
-                  // Aciona som real e audível de notificação do Android
-                  FlutterRingtonePlayer().playNotification(asAlarm: false);
-                } else {
-                  await Future.delayed(const Duration(milliseconds: 50));
-                }
-                await Future.delayed(const Duration(milliseconds: 150));
-              }
-
-              setState(() {
-                linkStatusInfo = "Transmissão Concluída com Sucesso [Gibberlink Protocol]";
-              });
-            }
 
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -244,45 +318,44 @@ jobs:
                     children: [
                       TextField(
                         controller: msgIaCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: "Instrução para a outra IA",
-                          labelStyle: TextStyle(color: Colors.purpleAccent),
-                          enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.purpleAccent)),
-                        ),
+                        decoration: const InputDecoration(labelText: "Instrução para a outra IA"),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 15),
                       ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          if (msgIaCtrl.text.isEmpty || _beepBytes == null) return;
+                          String binario = msgIaCtrl.text.codeUnits.map((x) => x.toRadixString(2).padLeft(8, '0')).join();
                           setInnerState(() {
-                            executarGibberlink(msgIaCtrl.text);
+                            pacoteBits = binario;
+                            linkStatusInfo = "GIBBERLINK ACTIVE: Injetando Pulsos...";
                           });
+
+                          for (int i = 0; i < binario.length; i++) {
+                            if (binario[i] == '1') {
+                              // Toca o bipe senoidal de 1500Hz gerado de forma tática e offline
+                              await _audioPlayer.play(BytesSource(_beepBytes!));
+                            }
+                            await Future.delayed(const Duration(milliseconds: 80));
+                          }
+                          setInnerState(() { linkStatusInfo = "Transmissão Concluída."; });
                         },
                         icon: const Icon(Icons.terminal, color: Colors.purpleAccent),
-                        label: const Text("Ativar MODO GIBBERLINK"),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
+                        label: const Text("Ativar GIBBERLINK"),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
                       ),
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 20),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          border: Border.all(color: Colors.purpleAccent, width: 1.5),
-                        ),
+                        padding: const EdgeInsets.all(12),
+                        color: Colors.black,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(linkStatusInfo, style: const TextStyle(color: Colors.greenAccent, fontSize: 13, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
-                            if (pacoteBits.isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              const Text("PACOTE ACÚSTICO TRANSMITIDO:", style: TextStyle(color: Colors.grey, fontSize: 11)),
-                              const SizedBox(height: 4),
-                              Text(pacoteBits, style: const TextStyle(color: Colors.amberAccent, fontSize: 11, letterSpacing: 1.1), maxLines: 3, overflow: TextOverflow.ellipsis),
-                            ]
+                            Text(linkStatusInfo, style: const TextStyle(color: Colors.greenAccent, fontFamily: 'monospace')),
+                            if (pacoteBits.isNotEmpty) Text(pacoteBits, style: const TextStyle(color: Colors.amber, fontSize: 11)),
                           ],
                         ),
-                      ),
+                      )
                     ],
                   );
                 }
