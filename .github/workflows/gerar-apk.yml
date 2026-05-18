@@ -44,13 +44,12 @@ jobs:
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código Completo do App Blueberry com Sintetizador de Som Offline Nativo
+    - name: Injetar Código Completo do App Blueberry com Feedback Acústico Nativo
       run: |
         cat << 'EOF' > lib/main.dart
         import 'dart:async';
-        import 'dart:math';
         import 'package:flutter/material.dart';
-        import 'package:flutter/services.dart';
+        import 'package:flutter/rendering.dart';
         import 'package:encrypt/encrypt.dart' as encrypt;
         import 'package:permission_handler/permission_handler.dart';
         import 'package:torch_light/torch_light.dart';
@@ -212,23 +211,15 @@ jobs:
                 .replaceAll('o', '⍁').replaceAll('u', '⎎').replaceAll(' ', '▰');
             }
 
-            // Método Tático: Gera bipes audíveis eletrônicos oscilando frequências nativas
+            // Novo Método Definitivo: Usa anúncios de semântica nativa para forçar o som no alto-falante
             void emitirSomSintetico(String runas) async {
               for (int i = 0; i < runas.length; i++) {
                 String char = runas[i];
-                int durationMs = 150;
                 
-                // Mapeamento de bipes eletrônicos audíveis bem nítidos (Frequências de 800Hz a 1800Hz)
-                if (char == '⏃') {
-                  await SystemSound.play(SystemSoundType.click);
-                } else if (char == '⟒') {
-                  await HapticFeedback.vibrate();
-                } else if (char == '▰') {
-                  durationMs = 300; // Espaço é uma pausa maior
-                } else {
-                  await SystemSound.play(SystemSoundType.click);
-                }
-                await Future.delayed(Duration(milliseconds: durationMs));
+                // Envia o caractere direto para o sintetizador de som do sistema operacional
+                SemanticsService.announce(char, TextDirection.ltr);
+                
+                await Future.delayed(const Duration(milliseconds: 400));
               }
             }
 
