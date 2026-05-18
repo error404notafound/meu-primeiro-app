@@ -39,7 +39,7 @@ jobs:
         flutter pub add encrypt
         flutter pub add path_provider
         flutter pub add permission_handler
-        flutter pub add flutter_blue_plus
+        flutter pub add flutter_blue_plus:1.31.1
         flutter pub add camera
         flutter pub add torch_light
         flutter pub add flutter_ringtone_player
@@ -48,7 +48,7 @@ jobs:
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código do App Blueberry com Som Gibberlink Real
+    - name: Injetar Código do App Blueberry com Som Gibberlink Real Corrigido
       run: |
         cat << 'EOF' > lib/main.dart
         import 'dart:async';
@@ -220,16 +220,14 @@ jobs:
                 linkStatusInfo = "GIBBERLINK MODE: Transmitindo Pacotes...";
               });
 
-              // Agora sim! Dispara bipes de sistema reais e audíveis para cada bit
+              // Dispara bipes nativos do sistema chamando a instância do objeto
               for (int i = 0; i < binario.length; i++) {
                 if (binario[i] == '1') {
-                  // Bipe curto de notificação para o bit 1
-                  FlutterRingtonePlayer.playNotification(asAlarm: false);
+                  // Aciona som real e audível de notificação do Android
+                  FlutterRingtonePlayer().playNotification(asAlarm: false);
                 } else {
-                  // Um pequeno atraso (silêncio) para representar o bit 0
                   await Future.delayed(const Duration(milliseconds: 50));
                 }
-                // Velocidade de transmissão dos bipes
                 await Future.delayed(const Duration(milliseconds: 150));
               }
 
