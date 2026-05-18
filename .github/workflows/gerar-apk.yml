@@ -28,7 +28,6 @@ jobs:
 
     - name: Limpar Arquivos Antigos e Conflitos
       run: |
-        # Força a exclusão total de qualquer main.dart ou pubspec antigo para não dar conflito
         rm -rf * .??*
 
     - name: Criar Projeto Base Blueberry
@@ -37,13 +36,13 @@ jobs:
 
     - name: Adicionar Bibliotecas Táticas Compatíveis
       run: |
-        flutter pub add encrypt:5.0.3
-        flutter pub add path_provider:2.1.3
-        flutter pub add permission_handler:11.3.1
-        flutter pub add flutter_blue_plus:1.31.1
-        flutter pub add camera:0.10.5+9
-        flutter pub add torch_light:1.0.1
-        flutter pub add flutter_tts:3.8.5
+        flutter pub add encrypt
+        flutter pub add path_provider
+        flutter pub add permission_handler
+        flutter pub add flutter_blue_plus
+        flutter pub add camera
+        flutter pub add torch_light
+        flutter pub add flutter_tts
 
     - name: Injetar Permissões Nativas no AndroidManifest
       run: |
@@ -99,16 +98,16 @@ jobs:
           }
 
           void _initTts() async {
-            await _tts.setLanguage("en-US"); // Define idioma para pronúncia robótica das IAs
-            await _tts.setSpeechRate(0.4);   // Transmissão tática mais lenta e compassada
-            await _tts.setPitch(0.7);        // Tom de voz mais grave e sintético
+            await _tts.setLanguage("en-US");
+            await _tts.setSpeechRate(0.4);
+            await _tts.setPitch(0.7);
           }
 
           @override
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text('🫐 Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
+                title: const Text(' Blueberry - Tático Offline', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.black,
                 bottom: TabBar(
                   controller: _tabController,
@@ -225,7 +224,6 @@ jobs:
             }
 
             void emitirSomSintetico(String comandosSons) async {
-              // Executa a voz sintética nativa e audível baseada no alfabeto fonético de IA
               await _tts.speak(comandosSons);
             }
 
