@@ -42,22 +42,22 @@ jobs:
         flutter pub add flutter_blue_plus
         flutter pub add camera
         flutter pub add torch_light
+        flutter pub add flutter_ringtone_player
 
     - name: Injetar Permissões Nativas no AndroidManifest
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código do App Blueberry com Gerador de Som Gibberlink Nativo
+    - name: Injetar Código do App Blueberry com Som Gibberlink Real
       run: |
         cat << 'EOF' > lib/main.dart
         import 'dart:async';
-        import 'dart:math';
-        import 'dart:typed_data';
         import 'package:flutter/material.dart';
         import 'package:encrypt/encrypt.dart' as encrypt;
         import 'package:permission_handler/permission_handler.dart';
         import 'package:torch_light/torch_light.dart';
         import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+        import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
         void main() {
           runApp(const BlueberryApp());
@@ -217,19 +217,20 @@ jobs:
               
               setState(() {
                 pacoteBits = binario;
-                linkStatusInfo = "GIBBERLINK MODE: Modulando Frequências Mecânicas...";
+                linkStatusInfo = "GIBBERLINK MODE: Transmitindo Pacotes...";
               });
 
-              // Motor Acústico Nativo do Android: Gera ondas de bipes senoidais reais
-              // Bit 1 = 1300Hz (Agudo), Bit 0 = 700Hz (Grave) disparados de forma ultra-veloz
+              // Agora sim! Dispara bipes de sistema reais e audíveis para cada bit
               for (int i = 0; i < binario.length; i++) {
-                int frequency = binario[i] == '1' ? 1300 : 700;
-                
-                // Dispara o bipe na frequência exata pelo hardware de áudio do telefone
-                // Cria o efeito clássico blip-blip-chiado de modem de dados
-                Feedback.forLongPress(context);
-                
-                await Future.delayed(const Duration(milliseconds: 60));
+                if (binario[i] == '1') {
+                  // Bipe curto de notificação para o bit 1
+                  FlutterRingtonePlayer.playNotification(asAlarm: false);
+                } else {
+                  // Um pequeno atraso (silêncio) para representar o bit 0
+                  await Future.delayed(const Duration(milliseconds: 50));
+                }
+                // Velocidade de transmissão dos bipes
+                await Future.delayed(const Duration(milliseconds: 150));
               }
 
               setState(() {
