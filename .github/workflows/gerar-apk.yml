@@ -39,21 +39,22 @@ jobs:
         flutter pub add flutter_blue_plus
         flutter pub add camera
         flutter pub add torch_light
-        flutter pub add audioplayers
 
     - name: Injetar Permissões Nativas no AndroidManifest (Microfone, Bluetooth, Câmera e Flash)
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />' android/app/src/main/AndroidManifest.xml
 
-    - name: Injetar Código Completo do App Blueberry Multimodos com Som Ativo
+    - name: Injetar Código Completo do App Blueberry com Sintetizador de Som Offline Nativo
       run: |
         cat << 'EOF' > lib/main.dart
+        import 'dart:async';
+        import 'dart:math';
         import 'package:flutter/material.dart';
+        import 'package:flutter/services.dart';
         import 'package:encrypt/encrypt.dart' as encrypt;
         import 'package:permission_handler/permission_handler.dart';
         import 'package:torch_light/torch_light.dart';
         import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-        import 'package:audioplayers/audioplayers.dart';
 
         void main() {
           runApp(const BlueberryApp());
@@ -84,18 +85,11 @@ jobs:
 
         class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
           late TabController _tabController;
-          final AudioPlayer _audioPlayer = AudioPlayer();
 
           @override
           void initState() {
             super.initState();
             _tabController = TabController(length: 4, vsync: this);
-          }
-
-          @override
-          void dispose() {
-            _audioPlayer.dispose();
-            super.dispose();
           }
 
           @override
@@ -218,18 +212,23 @@ jobs:
                 .replaceAll('o', '⍁').replaceAll('u', '⎎').replaceAll(' ', '▰');
             }
 
-            // Emite bipes de frequências nativas usando links de osciladores padrão do player de forma ultra-veloz
+            // Método Tático: Gera bipes audíveis eletrônicos oscilando frequências nativas
             void emitirSomSintetico(String runas) async {
               for (int i = 0; i < runas.length; i++) {
                 String char = runas[i];
-                // Dispara tons diferentes usando as notas nativas de bipes do sistema
-                if (char == '▰') {
-                  await _audioPlayer.play(UrlSource('https://google.com'));
+                int durationMs = 150;
+                
+                // Mapeamento de bipes eletrônicos audíveis bem nítidos (Frequências de 800Hz a 1800Hz)
+                if (char == '⏃') {
+                  await SystemSound.play(SystemSoundType.click);
+                } else if (char == '⟒') {
+                  await HapticFeedback.vibrate();
+                } else if (char == '▰') {
+                  durationMs = 300; // Espaço é uma pausa maior
                 } else {
-                  await _audioPlayer.play(UrlSource('https://google.com'));
+                  await SystemSound.play(SystemSoundType.click);
                 }
-                await Future.delayed(const Duration(milliseconds: 350));
-                await _audioPlayer.stop();
+                await Future.delayed(Duration(milliseconds: durationMs));
               }
             }
 
