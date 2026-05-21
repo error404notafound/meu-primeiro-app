@@ -1,13 +1,14 @@
 {
   "project_info": {
-    "project_number": "162217073665",
-    "project_id": "meu-app-6f351",
-    "storage_bucket": "meu-app-6f351.firebasestorage.app"
+    "project_number": "907567492761",
+    "firebase_url": "https://blueberry-c6d6f-default-rtdb.firebaseio.com",
+    "project_id": "blueberry-c6d6f",
+    "storage_bucket": "blueberry-c6d6f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:162217073665:android:7e4a51d770f29666d2f400",
+        "mobilesdk_app_id": "1:907567492761:android:67d19ff1f11a7249b25208",
         "android_client_info": {
           "package_name": "com.example.meu_primeiro_app"
         }
@@ -15,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDZy2Uy0hPkOrqB_tEEM2aZaw9Ucgjpn7w"
+          "current_key": "AIzaSyACd5yFgIAaERDfKBdEwhgNbFwERz-yOgM"
         }
       ],
       "services": {
